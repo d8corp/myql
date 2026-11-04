@@ -18,4 +18,4 @@ program
   .description('build the app and run it, restarting when a plugin is applied')
   .action(start)
 
-program.parse()
+await program.parseAsync()

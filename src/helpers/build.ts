@@ -37,7 +37,7 @@ export async function build (): Promise<void> {
     input: virtualInput,
     platform: 'browser',
     plugins: [
-      virtualEntry(generate(plugins, 'server')),
+      virtualEntry(generate(plugins, 'client')),
     ],
   })
 

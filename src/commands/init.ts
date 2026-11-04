@@ -5,17 +5,17 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 /** Create an app folder whose package.json only lists the base plugins. */
-export function init (name: string) {
+export async function init (name: string) {
   const dir = resolve(name)
   const packageJsonPath = join(name, 'package.json')
 
-  logger.start('Check the target folder is free', () => {
+  await logger.start('Check the target folder is free', async () => {
     if (existsSync(packageJsonPath)) {
       throw Error(`${name} already contains a package.json`)
     }
   })
 
-  logger.start('Write the app', () => {
+  await logger.start('Write the app', async () => {
     mkdirSync(name)
 
     const pkg = JSON.stringify({
@@ -27,7 +27,7 @@ export function init (name: string) {
     writeFileSync(packageJsonPath, pkg)
   })
 
-  logger.start('Install dependencies', () => {
+  await logger.start('Install dependencies', async () => {
     const result = spawn.sync('npm', ['install'], { cwd: dir })
 
     if (result.error) {

@@ -1,5 +1,5 @@
-import { rmSync } from 'node:fs'
-import path from 'node:path'
+import { existsSync, rmSync } from 'node:fs'
+import path, { join } from 'node:path'
 import { rolldown } from 'rolldown'
 
 import { ARTIFACTS, CLIENT_DIR, CLIENT_OUTPUT, SERVER_DIR, SERVER_OUTPUT } from '../constants'
@@ -9,9 +9,24 @@ function generate (plugins: string[], side: 'server' | 'client'): string {
   return plugins.map(name => `import '${name}/${side}'`).join('\n')
 }
 
+function isPlugin (name: string) {
+  const pkgPath = join('node_modules', name, 'package.json')
+  if (!existsSync(pkgPath)) return {}
+  const { exports } = readJsonFileSync<{ exports?: Record<string, unknown> }>(pkgPath)
+
+  return {
+    server: Boolean(exports?.['./server']),
+    client: Boolean(exports?.['./client']),
+  }
+}
+
 export async function build (): Promise<void> {
   const pkg = readJsonFileSync<any>(path.resolve('package.json'))
+
   const plugins = Object.keys(pkg.dependencies || {})
+  const pluginsDetection = plugins.map(name => isPlugin(name))
+  const serverPlugins = plugins.filter((_, i) => pluginsDetection[i].server)
+  const clientPlugins = plugins.filter((_, i) => pluginsDetection[i].client)
 
   for (const artifact of ARTIFACTS) rmSync(artifact, { recursive: true, force: true })
 
@@ -20,7 +35,7 @@ export async function build (): Promise<void> {
     platform: 'node',
     external: (id) => !id.startsWith('.') && !path.isAbsolute(id),
     plugins: [
-      virtualEntry(generate(plugins, 'server')),
+      virtualEntry(generate(serverPlugins, 'server')),
     ],
   })
 
@@ -37,7 +52,7 @@ export async function build (): Promise<void> {
     input: virtualInput,
     platform: 'browser',
     plugins: [
-      virtualEntry(generate(plugins, 'client')),
+      virtualEntry(generate(clientPlugins, 'client')),
     ],
   })
 

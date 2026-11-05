@@ -1,30 +1,12 @@
-import { existsSync, rmSync } from 'node:fs'
-import { isAbsolute, join, posix, resolve } from 'node:path'
+import { rmSync } from 'node:fs'
+import { isAbsolute, posix, resolve } from 'node:path'
 import { rolldown } from 'rolldown'
 
 import { ARTIFACTS, CLIENT_DIR, CLIENT_OUTPUT, SERVER_DIR, SERVER_OUTPUT } from '../constants'
-import { readJsonFileSync, virtualEntry, virtualInput } from '../utils'
+import { isPlugin, readJsonFileSync, virtualEntry, virtualInput } from '../utils'
 
 function generate (plugins: string[], side: 'server' | 'client'): string {
   return plugins.map(name => `import '${name}/${side}'`).join('\n')
-}
-
-function isPlugin (name: string) {
-  const pkgPath = join('node_modules', name, 'package.json')
-
-  if (!existsSync(pkgPath)) {
-    return {
-      server: false,
-      client: false,
-    }
-  }
-
-  const { exports } = readJsonFileSync<{ exports?: Record<string, unknown> }>(pkgPath)
-
-  return {
-    server: Boolean(exports?.['./server']),
-    client: Boolean(exports?.['./client']),
-  }
 }
 
 export async function build (): Promise<void> {

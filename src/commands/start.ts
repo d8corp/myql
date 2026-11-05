@@ -4,7 +4,7 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join, resolve as resolvePath } from 'node:path'
 
-import { RESTART_CODE, SERVER_OUTPUT } from '../constants'
+import { RESTART_CODE, SERVER_DIR, SERVER_OUTPUT } from '../constants'
 import { build } from '../helpers'
 
 let current: ChildProcess | null = null
@@ -12,7 +12,7 @@ let stopping = false
 
 function spawnApp (): Promise<{ code: number | null; signal: string | null }> {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [SERVER_OUTPUT], {
+    const child = spawn(process.execPath, [join(SERVER_DIR, SERVER_OUTPUT)], {
       stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
       env: process.env,
     })

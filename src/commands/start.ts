@@ -17,6 +17,10 @@ function spawnApp (): Promise<{ code: number | null; signal: string | null }> {
 
     current = child
 
+    child.on('error', (e) => {
+      logger.log(chalk.red(`[myql] failed to start: ${e.message}`))
+    })
+
     child.on('exit', (code, signal) => {
       current = null
       resolve({ code, signal })

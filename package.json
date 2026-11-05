@@ -35,7 +35,7 @@
     "url": "https://github.com/d8corp/myql/issues"
   },
   "dependencies": {
-    "@cantinc/logger": "1.1.0",
+    "@cantinc/logger": "^1.2.0",
     "@types/cross-spawn": "^6.0.6",
     "chalk": "^5.6.2",
     "commander": "^15.0.0",

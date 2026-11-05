@@ -1,4 +1,4 @@
-import logger from '@cantinc/logger'
+import { logger } from '@cantinc/logger'
 import chalk from 'chalk'
 import spawn from 'cross-spawn'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'

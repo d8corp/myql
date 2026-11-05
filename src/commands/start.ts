@@ -1,4 +1,4 @@
-import logger from '@cantinc/logger'
+import { logger } from '@cantinc/logger'
 import chalk from 'chalk'
 import { type ChildProcess, spawn } from 'node:child_process'
 

@@ -33,7 +33,7 @@ myql start         # builds, then runs and supervises the app
 | Command                | What it does                                                                                        |
 |------------------------|-----------------------------------------------------------------------------------------------------|
 | `myql init <app-name>` | Creates the app folder with a `package.json` and installs dependencies.                             |
-| `myql start`           | Bundles the app into `server/` and `client/`, runs `node server/index.mjs` and keeps it supervised. |
+| `myql start [app-path]` | Bundles the app into `server/` and `client/`, runs `node server/index.mjs` and keeps it supervised. `app-path` defaults to the current folder. |
 
 ## Writing a plugin
 

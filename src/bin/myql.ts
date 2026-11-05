@@ -14,7 +14,7 @@ program
   .action(init)
 
 program
-  .command('start')
+  .command('start [app-path]')
   .description('build the app and run it, restarting when a plugin is applied')
   .action(start)
 

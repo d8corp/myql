@@ -1,6 +1,8 @@
 import { logger } from '@cantinc/logger'
 import chalk from 'chalk'
 import { type ChildProcess, spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 
 import { RESTART_CODE, SERVER_OUTPUT } from '../constants'
 import { build } from '../helpers'
@@ -9,7 +11,7 @@ let current: ChildProcess | null = null
 let stopping = false
 
 function spawnApp (): Promise<{ code: number | null; signal: string | null }> {
-  return new Promise((resolve) => {
+  return new Promise((settle) => {
     const child = spawn(process.execPath, [SERVER_OUTPUT], {
       stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
       env: process.env,
@@ -20,17 +22,27 @@ function spawnApp (): Promise<{ code: number | null; signal: string | null }> {
     child.on('error', (e) => {
       logger.log(chalk.red(`[myql] failed to start: ${e.message}`))
       current = null
-      resolve({ code: 1, signal: null })
+      settle({ code: 1, signal: null })
     })
 
     child.on('exit', (code, signal) => {
       current = null
-      resolve({ code, signal })
+      settle({ code, signal })
     })
   })
 }
 
-export async function start (): Promise<void> {
+export async function start (appPath = '.'): Promise<void> {
+  await logger.start('Check the app folder', async () => {
+    const dir = resolve(appPath)
+
+    if (!existsSync(join(dir, 'package.json'))) {
+      throw Error(`${dir} does not contain a package.json`)
+    }
+
+    process.chdir(dir)
+  })
+
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     process.on(signal, () => {
       stopping = true

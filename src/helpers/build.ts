@@ -1,5 +1,5 @@
 import { existsSync, rmSync } from 'node:fs'
-import path, { join } from 'node:path'
+import { isAbsolute, join, posix, resolve } from 'node:path'
 import { rolldown } from 'rolldown'
 
 import { ARTIFACTS, CLIENT_DIR, CLIENT_OUTPUT, SERVER_DIR, SERVER_OUTPUT } from '../constants'
@@ -11,7 +11,14 @@ function generate (plugins: string[], side: 'server' | 'client'): string {
 
 function isPlugin (name: string) {
   const pkgPath = join('node_modules', name, 'package.json')
-  if (!existsSync(pkgPath)) return {}
+
+  if (!existsSync(pkgPath)) {
+    return {
+      server: false,
+      client: false,
+    }
+  }
+
   const { exports } = readJsonFileSync<{ exports?: Record<string, unknown> }>(pkgPath)
 
   return {
@@ -21,7 +28,7 @@ function isPlugin (name: string) {
 }
 
 export async function build (): Promise<void> {
-  const pkg = readJsonFileSync<any>(path.resolve('package.json'))
+  const pkg = readJsonFileSync<any>(resolve('package.json'))
 
   const plugins = Object.keys(pkg.dependencies || {})
   const pluginsDetection = plugins.map(name => isPlugin(name))
@@ -33,7 +40,7 @@ export async function build (): Promise<void> {
   const server = await rolldown({
     input: virtualInput,
     platform: 'node',
-    external: (id) => !id.startsWith('.') && !path.isAbsolute(id),
+    external: (id) => !id.startsWith('.') && !isAbsolute(id),
     plugins: [
       virtualEntry(generate(serverPlugins, 'server')),
     ],
@@ -43,7 +50,7 @@ export async function build (): Promise<void> {
     dir: SERVER_DIR,
     format: 'esm',
     entryFileNames: SERVER_OUTPUT,
-    chunkFileNames: path.posix.join('chunks', '[name]-[hash].js'),
+    chunkFileNames: posix.join('chunks', '[name]-[hash].js'),
   })
 
   await server.close()
@@ -60,8 +67,8 @@ export async function build (): Promise<void> {
     dir: CLIENT_DIR,
     format: 'esm',
     entryFileNames: CLIENT_OUTPUT,
-    chunkFileNames: path.posix.join('chunks', '[name]-[hash].js'),
-    assetFileNames: path.posix.join('assets', '[name]-[hash][extname]'),
+    chunkFileNames: posix.join('chunks', '[name]-[hash].js'),
+    assetFileNames: posix.join('assets', '[name]-[hash][extname]'),
   })
 
   await client.close()

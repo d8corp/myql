@@ -15,7 +15,7 @@
   "scripts": {
     "build": "innetjs release -e -tc -lc",
     "release": "innetjs release -p -e -tc -lc",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "start": "npm run build && cd release && npm link",

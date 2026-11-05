@@ -30,10 +30,10 @@ cd my-app
 myql start         # builds, then runs and supervises the app
 ```
 
-| Command | What it does |
-| --- | --- |
-| `myql init <app-name>` | Creates the app folder with a `package.json` and installs dependencies. |
-| `myql start` | Bundles the app into `server/` and `client/`, runs `node server/index.mjs` and keeps it supervised. |
+| Command                | What it does                                                                                        |
+|------------------------|-----------------------------------------------------------------------------------------------------|
+| `myql init <app-name>` | Creates the app folder with a `package.json` and installs dependencies.                             |
+| `myql start`           | Bundles the app into `server/` and `client/`, runs `node server/index.mjs` and keeps it supervised. |
 
 ## Writing a plugin
 
@@ -51,12 +51,12 @@ A plugin is a regular npm package that exposes a `./server` and/or `./client` su
 
 For every **direct** dependency of the app, `myql start` checks the `exports` map:
 
-| Dependency | Result |
-| --- | --- |
-| exports `./server` | imported into the server bundle |
+| Dependency         | Result                           |
+|--------------------|----------------------------------|
+| exports `./server` | imported into the server bundle  |
 | exports `./client` | imported into the browser bundle |
-| exports neither | skipped with a warning |
-| not installed | reported as not found |
+| exports neither    | skipped with a warning           |
+| not installed      | reported as not found            |
 
 A plugin may provide only one side. Only `dependencies` are scanned, not `devDependencies`.
 

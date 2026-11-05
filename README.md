@@ -4,8 +4,7 @@ Build apps out of plugins.
 In myql, **`package.json` is the app**: every dependency is a plugin, and the CLI turns them into a running server and browser bundle.
 
 ```sh
-npm i -g myql
-myql init my-app && cd my-app && myql start
+npx myql init my-app && npx myql start my-app
 ```
 
 > **Status:** early development. The base plugin set is not ready yet, so for now you add plugins to `dependencies` by hand.
@@ -30,9 +29,9 @@ cd my-app
 myql start         # builds, then runs and supervises the app
 ```
 
-| Command                | What it does                                                                                        |
-|------------------------|-----------------------------------------------------------------------------------------------------|
-| `myql init <app-name>` | Creates the app folder with a `package.json` and installs dependencies.                             |
+| Command                 | What it does                                                                                                                                   |
+|-------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `myql init <app-name>`  | Creates the app folder with a `package.json` and installs dependencies.                                                                        |
 | `myql start [app-path]` | Bundles the app into `server/` and `client/`, runs `node server/index.mjs` and keeps it supervised. `app-path` defaults to the current folder. |
 
 ## Writing a plugin

@@ -18,4 +18,8 @@ program
   .description('build the app and run it, restarting when a plugin is applied')
   .action(start)
 
-await program.parseAsync()
+try {
+  await program.parseAsync()
+} catch {
+  process.exitCode = 1
+}

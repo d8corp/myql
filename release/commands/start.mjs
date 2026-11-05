@@ -1,4 +1,4 @@
-import { SERVER_OUTPUT } from "../constants.mjs";
+import { SERVER_DIR, SERVER_OUTPUT } from "../constants.mjs";
 import { build } from "../helpers/build.mjs";
 import "../helpers/index.mjs";
 import { logger } from "@cantinc/logger";
@@ -11,7 +11,7 @@ let current = null;
 let stopping = false;
 function spawnApp() {
 	return new Promise((resolve) => {
-		const child = spawn(process.execPath, [SERVER_OUTPUT], {
+		const child = spawn(process.execPath, [join(SERVER_DIR, SERVER_OUTPUT)], {
 			stdio: [
 				"inherit",
 				"inherit",

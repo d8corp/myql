@@ -125,7 +125,7 @@ let current = null;
 let stopping = false;
 function spawnApp() {
 	return new Promise((resolve) => {
-		const child = spawn$1(process.execPath, [SERVER_OUTPUT], {
+		const child = spawn$1(process.execPath, [join(SERVER_DIR, SERVER_OUTPUT)], {
 			stdio: [
 				"inherit",
 				"inherit",
@@ -181,7 +181,7 @@ async function start(appPath = ".") {
 	}
 }
 // src/bin/myql.ts
-program.name("myql").description("CLI that builds and runs myql apps assembled from plugins").version("1.0.1", "-v, --version");
+program.name("myql").description("CLI that builds and runs myql apps assembled from plugins").version("1.0.2", "-v, --version");
 program.command("init <app-name>").description("create an app folder with a package.json that lists the base plugins").action(init);
 program.command("start [app-path]").description("build the app and run it, restarting when a plugin is applied").action(start);
 try {

@@ -1,6 +1,6 @@
 {
   "name": "myql",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "CLI that builds and runs myql apps assembled from plugins",
   "homepage": "https://github.com/d8corp/myql",
   "author": "Mikhail Lysikov <d8corp@mail.ru>",

@@ -1,0 +1,191 @@
+#!/usr/bin/env node
+import { program } from "commander";
+import { logger } from "@cantinc/logger";
+import chalk from "chalk";
+import spawn from "cross-spawn";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { isAbsolute, join, posix, resolve } from "node:path";
+import { spawn as spawn$1 } from "node:child_process";
+import { rolldown } from "rolldown";
+// src/commands/init.ts
+/** Create an app folder whose package.json only lists the base plugins. */
+async function init(name) {
+	const dir = resolve(name);
+	const packageJsonPath = join(name, "package.json");
+	await logger.start("Check the target folder is free", async () => {
+		if (existsSync(packageJsonPath)) throw Error(`${name} already contains a package.json`);
+	});
+	await logger.start("Write the app", async () => {
+		mkdirSync(name);
+		const pkg = JSON.stringify({
+			name,
+			private: true,
+			dependencies: {}
+		}, null, 2) + "\n";
+		writeFileSync(packageJsonPath, pkg);
+	});
+	await logger.start("Install dependencies", async () => {
+		const result = spawn.sync("npm", ["install"], { cwd: dir });
+		if (result.error) throw Error(`Failed to run npm: ${result.error.message}`);
+		if (result.status !== 0) {
+			const output = result.stderr?.toString() || result.stdout?.toString();
+			throw Error(`npm install failed:\n${output}`);
+		}
+	});
+	logger.log(`Created ${chalk.white(name)} in ${chalk.white(dir)}`);
+	logger.log(`Next: ${chalk.white("cd")} ${name} && ${chalk.white("myql start")}`);
+}
+// src/constants.ts
+const SERVER_OUTPUT = "index.mjs";
+const CLIENT_OUTPUT = "index.js";
+const SERVER_DIR = "server";
+const CLIENT_DIR = "client";
+const ARTIFACTS = [CLIENT_DIR, SERVER_DIR];
+// src/utils/readJsonFileSync.ts
+function readJsonFileSync(path) {
+	return JSON.parse(readFileSync(path, "utf8"));
+}
+// src/utils/isPlugin.ts
+function isPlugin(name) {
+	const pkgPath = join("node_modules", name, "package.json");
+	if (!existsSync(pkgPath)) {
+		logger.log(chalk.red(`Plugin ${name} not found`));
+		return {
+			server: false,
+			client: false
+		};
+	}
+	const { exports } = readJsonFileSync(pkgPath);
+	const server = Boolean(exports?.["./server"]);
+	const client = Boolean(exports?.["./client"]);
+	if (!server && !client) logger.log(chalk.red(`Plugin ${name} does not export server or client`));
+	return {
+		server,
+		client
+	};
+}
+// src/utils/virtualEntry.ts
+const virtualInput = "virtual:entry";
+function virtualEntry(code, input = virtualInput) {
+	const resolvedInput = "\0" + input;
+	return {
+		name: "virtual-entry",
+		resolveId(source, importer) {
+			if (source === input) return resolvedInput;
+			if (importer === resolvedInput) return this.resolve(source, void 0, { skipSelf: true });
+		},
+		load(id) {
+			if (id === resolvedInput) return code;
+		}
+	};
+}
+// src/helpers/build.ts
+function generate(plugins, side) {
+	return plugins.map((name) => `import '${name}/${side}'`).join("\n");
+}
+async function build() {
+	const pkg = readJsonFileSync(resolve("package.json"));
+	const plugins = Object.keys(pkg.dependencies || {});
+	const pluginsDetection = plugins.map((name) => isPlugin(name));
+	const serverPlugins = plugins.filter((_, i) => pluginsDetection[i].server);
+	const clientPlugins = plugins.filter((_, i) => pluginsDetection[i].client);
+	for (const artifact of ARTIFACTS) rmSync(artifact, {
+		recursive: true,
+		force: true
+	});
+	const server = await rolldown({
+		input: virtualInput,
+		platform: "node",
+		external: (id) => !id.startsWith(".") && !isAbsolute(id),
+		plugins: [virtualEntry(generate(serverPlugins, "server"))]
+	});
+	await server.write({
+		dir: SERVER_DIR,
+		format: "esm",
+		entryFileNames: SERVER_OUTPUT,
+		chunkFileNames: posix.join("chunks", "[name]-[hash].js")
+	});
+	await server.close();
+	const client = await rolldown({
+		input: virtualInput,
+		platform: "browser",
+		plugins: [virtualEntry(generate(clientPlugins, "client"))]
+	});
+	await client.write({
+		dir: CLIENT_DIR,
+		format: "esm",
+		entryFileNames: CLIENT_OUTPUT,
+		chunkFileNames: posix.join("chunks", "[name]-[hash].js"),
+		assetFileNames: posix.join("assets", "[name]-[hash][extname]")
+	});
+	await client.close();
+}
+// src/commands/start.ts
+let current = null;
+let stopping = false;
+function spawnApp() {
+	return new Promise((resolve) => {
+		const child = spawn$1(process.execPath, [SERVER_OUTPUT], {
+			stdio: [
+				"inherit",
+				"inherit",
+				"inherit",
+				"ipc"
+			],
+			env: process.env
+		});
+		current = child;
+		child.on("error", (e) => {
+			logger.log(chalk.red(`[myql] failed to start: ${e.message}`));
+			current = null;
+			resolve({
+				code: 1,
+				signal: null
+			});
+		});
+		child.on("exit", (code, signal) => {
+			current = null;
+			resolve({
+				code,
+				signal
+			});
+		});
+	});
+}
+async function start(appPath = ".") {
+	await logger.start("Check the app folder", async () => {
+		const dir = resolve(appPath);
+		if (!existsSync(join(dir, "package.json"))) throw Error(`${dir} does not contain a package.json`);
+		process.chdir(dir);
+	});
+	for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => {
+		stopping = true;
+		if (current) current.kill(signal);
+		else process.exit(0);
+	});
+	await logger.start("Bundle", build);
+	for (;;) {
+		const { code, signal } = await spawnApp();
+		if (stopping) return;
+		if (code === 75) {
+			await logger.start("Bundle", build);
+			continue;
+		}
+		if (code === 0 && signal === null) {
+			logger.log(chalk.cyan("[myql] the app stopped"));
+			return;
+		}
+		logger.log(chalk.red(`[myql] the app exited with code ${code ?? signal}`));
+		process.exitCode = code ?? 1;
+		return;
+	}
+}
+// src/bin/myql.ts
+program.name("myql").description("CLI that builds and runs myql apps assembled from plugins").version("1.0.1", "-v, --version");
+program.command("init <app-name>").description("create an app folder with a package.json that lists the base plugins").action(init);
+program.command("start [app-path]").description("build the app and run it, restarting when a plugin is applied").action(start);
+try {
+	await program.parseAsync();
+} catch {
+	process.exitCode = 1;
+}

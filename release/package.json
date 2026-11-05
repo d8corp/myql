@@ -1,0 +1,44 @@
+{
+  "name": "myql",
+  "version": "1.0.1",
+  "description": "CLI that builds and runs myql apps assembled from plugins",
+  "homepage": "https://github.com/d8corp/myql",
+  "author": "Mikhail Lysikov <d8corp@mail.ru>",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.mjs",
+  "types": "index.d.ts",
+  "bin": {
+    "myql": "bin/myql"
+  },
+  "scripts": {
+    "build": "innetjs release -e -tc -lc",
+    "release": "innetjs release -p -e -tc -lc",
+    "test": "jest --passWithNoTests",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "start": "npm run build && cd release && npm link",
+    "stop": "npm unlink myql -g",
+    "restart": "npm run stop && npm start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/d8corp/myql.git"
+  },
+  "keywords": [
+    "myql",
+    "app",
+    "plugin"
+  ],
+  "bugs": {
+    "url": "https://github.com/d8corp/myql/issues"
+  },
+  "dependencies": {
+    "@cantinc/logger": "^1.2.0",
+    "@types/cross-spawn": "^6.0.6",
+    "chalk": "^5.6.2",
+    "commander": "^15.0.0",
+    "cross-spawn": "^7.0.6",
+    "rolldown": "^1.2.16"
+  }
+}
